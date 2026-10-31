@@ -1,0 +1,108 @@
+@import 'tailwindcss';
+
+/*
+ * KeyFinder design tokens.
+ * brand  = indigo/violet (primary actions, active states)
+ * accent = brass/amber (keys, highlights)
+ * Surfaces are slightly tinted; dark mode uses a deep navy, not pure black.
+ */
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+
+  --color-brand-50: #eef0ff;
+  --color-brand-100: #e0e3ff;
+  --color-brand-200: #c6cbff;
+  --color-brand-300: #a3a8fe;
+  --color-brand-400: #8183fa;
+  --color-brand-500: #6a63f3;
+  --color-brand-600: #5a45e6;
+  --color-brand-700: #4c37cb;
+  --color-brand-800: #3e2fa4;
+  --color-brand-900: #352d82;
+
+  --color-accent-100: #fdf2d7;
+  --color-accent-200: #fbe3a8;
+  --color-accent-300: #f7cc6c;
+  --color-accent-400: #f2b23c;
+  --color-accent-500: #e09419;
+  --color-accent-600: #b97412;
+  --color-accent-700: #8f5713;
+
+  --color-canvas: #f4f5fb;
+  --color-canvas-dark: #0a0e1f;
+  --color-surface-dark: #131a30;
+  --color-surface-dark-2: #1b2340;
+
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px -4px rgb(15 23 42 / 0.08);
+  --shadow-float: 0 10px 30px -8px rgb(30 27 75 / 0.35);
+}
+
+@layer base {
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply min-h-dvh bg-canvas text-slate-900 antialiased dark:bg-canvas-dark dark:text-slate-100;
+    overscroll-behavior-y: none;
+  }
+  ::selection {
+    @apply bg-brand-200 text-brand-900;
+  }
+}
+
+/* Elevated card surface (light + dark). */
+@utility surface {
+  @apply rounded-3xl bg-white shadow-card ring-1 ring-slate-900/5 dark:bg-surface-dark dark:shadow-none dark:ring-white/8;
+}
+/* Brand gradient used by hero areas and the primary button. */
+@utility bg-brand-gradient {
+  background-image: linear-gradient(135deg, #5a45e6 0%, #7a3fe0 55%, #9b4bd8 100%);
+}
+@utility text-gradient {
+  background-image: linear-gradient(90deg, #5a45e6, #b14bd1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility px-safe {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  header,
+  nav,
+  [role='status'] {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+}

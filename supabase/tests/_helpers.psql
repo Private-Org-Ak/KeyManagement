@@ -1,0 +1,118 @@
+-- Shared pgTAP helpers. Included by every *.test.sql with `\ir _helpers.psql` INSIDE the
+-- test's transaction, so everything here (schema, users, fixture) is rolled back afterwards.
+--
+--   tests.create_user(handle)   → uuid   creates auth user  <handle>@test.local
+--   tests.uid(handle)           → uuid
+--   tests.authenticate_as(handle)        role = authenticated, JWT claims for that user
+--   tests.authenticate_as_anon()         role = anon
+--   tests.reset_role()                   back to postgres (superuser, bypasses RLS)
+--   tests.hh(name)              → uuid   fixture household 'A' or 'B'
+--   tests.create_fixture()               see bottom of file
+
+create extension if not exists pgtap with schema extensions;
+set search_path = public, extensions;
+
+create schema tests;
+grant usage on schema tests to anon, authenticated;
+
+create function tests.create_user(handle text) returns uuid
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_id uuid := gen_random_uuid();
+begin
+  insert into auth.users (instance_id, id, aud, role, email, raw_app_meta_data, raw_user_meta_data,
+                          created_at, updated_at)
+  values ('00000000-0000-0000-0000-000000000000', v_id, 'authenticated', 'authenticated',
+          handle || '@test.local', '{"provider":"email"}', '{}', now(), now());
+  return v_id;
+end;
+$$;
+
+create function tests.uid(handle text) returns uuid
+language sql stable security definer set search_path = '' as $$
+  select id from auth.users where email = handle || '@test.local';
+$$;
+
+-- SET ROLE is checked against the session user (postgres), so these can switch freely.
+create function tests.authenticate_as(handle text) returns void
+language plpgsql as $$
+declare
+  v_id uuid := tests.uid(handle);
+begin
+  if v_id is null then
+    raise exception 'tests.authenticate_as: unknown user %', handle;
+  end if;
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object(
+    'sub', v_id, 'role', 'authenticated', 'email', handle || '@test.local', 'aud', 'authenticated'
+  )::text, true);
+end;
+$$;
+
+create function tests.authenticate_as_anon() returns void
+language plpgsql as $$
+begin
+  perform set_config('role', 'anon', true);
+  perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+end;
+$$;
+
+create function tests.reset_role() returns void
+language plpgsql as $$
+begin
+  perform set_config('role', 'postgres', true);
+  perform set_config('request.jwt.claims', '', true);
+end;
+$$;
+
+create table tests.households (name text primary key, id uuid not null);
+grant select on tests.households to anon, authenticated;
+
+create function tests.hh(p_name text) returns uuid
+language sql stable as $$ select id from tests.households where name = p_name $$;
+
+grant execute on all functions in schema tests to anon, authenticated;
+
+-- Fixture (created as postgres, RLS bypassed):
+--   Household A: owner_a (owner), admin_a & admin2_a (admin), member_a & member2_a (member),
+--                both (member — also member of B)
+--   Household B: owner_b (owner), both (member)
+--   outsider: no memberships
+--   A: door 'A Door' with key 'A-100';  B: door 'B Door' with key 'B-100'
+--   A: one pending invite;  storage object  <A>/existing.jpg
+create function tests.create_fixture() returns void
+language plpgsql as $$
+declare
+  a uuid; b uuid;
+begin
+  perform tests.create_user(h) from unnest(array[
+    'owner_a','admin_a','admin2_a','member_a','member2_a','both','owner_b','outsider'
+  ]) as h;
+
+  insert into public.households (name, created_by) values ('Home A', tests.uid('owner_a'))
+  returning id into a;
+  insert into public.households (name, created_by) values ('Home B', tests.uid('owner_b'))
+  returning id into b;
+  insert into tests.households values ('A', a), ('B', b);
+
+  insert into public.memberships (household_id, user_id, role) values
+    (a, tests.uid('owner_a'),   'owner'),
+    (a, tests.uid('admin_a'),   'admin'),
+    (a, tests.uid('admin2_a'),  'admin'),
+    (a, tests.uid('member_a'),  'member'),
+    (a, tests.uid('member2_a'), 'member'),
+    (a, tests.uid('both'),      'member'),
+    (b, tests.uid('owner_b'),   'owner'),
+    (b, tests.uid('both'),      'member');
+
+  insert into public.doors (household_id, name) values (a, 'A Door'), (b, 'B Door');
+  insert into public.keys (household_id, door_id, key_number)
+  select household_id, id, case when household_id = a then 'A-100' else 'B-100' end
+  from public.doors where household_id in (a, b);
+
+  insert into public.invites (household_id, code_hash, role, created_by)
+  values (a, encode(extensions.digest('FIXTURECODE', 'sha256'), 'hex'), 'member', tests.uid('owner_a'));
+
+  insert into storage.objects (bucket_id, name) values ('key-photos', a::text || '/existing.jpg');
+end;
+$$;
