@@ -1,9 +1,11 @@
 import { useCallback, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { Banner, Button, PageHeader, cx } from '@/components/ui'
 import { flags } from '@/lib/flags'
 import type { Pixels } from '@/lib/image'
 import { canonical } from '@/lib/normalize'
 import { matchScanned, type OcrCandidate, type ScanMatch } from '@/lib/match'
+import { parseInvitePayload } from '@/lib/inviteCode'
 import { nfcTagId, parseQrPayload } from '@/lib/tags'
 import { errorMessage } from '@/lib/errors'
 import type { DoorRow, KeyRow } from '@/types/models'
@@ -34,6 +36,7 @@ export function ScanPage() {
   const [tag, setTag] = useState<TagResult | null>(null)
   const tryHarder = useTryHarder(hid)
   const nfc = isNfcSupported()
+  const navigate = useNavigate()
 
   const keyCanon = useMemo(() => new Set(keys.map((k) => canonical(k.key_number))), [keys])
   const isDone = useCallback(
@@ -155,7 +158,14 @@ export function ScanPage() {
         (tag ? (
           <TagOutcome hid={hid} tag={tag} group={tagGroup} onRetry={reset} />
         ) : (
-          <QrPanel active onText={(t) => void onTag(parseQrPayload(t))} />
+          <QrPanel
+            active
+            onText={(t) => {
+              const invite = parseInvitePayload(t)
+              if (invite) void navigate(`/join/${invite}`)
+              else void onTag(parseQrPayload(t))
+            }}
+          />
         ))}
 
       {tab === 'nfc' &&

@@ -126,11 +126,10 @@ export function useAcceptInvite(userId: string) {
 export function useCreateInvite(hid: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ role, email }: { role: MemberRole; email: string }) => {
+    mutationFn: async ({ role }: { role: MemberRole }) => {
       const { data, error } = await supabase.rpc('create_invite', {
         p_household_id: hid,
         p_role: role,
-        ...(email ? { p_email: email } : {}),
       })
       if (error) throw error
       return data

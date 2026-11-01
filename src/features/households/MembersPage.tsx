@@ -14,7 +14,7 @@ import {
   TextField,
 } from '@/components/ui'
 import { errorMessage } from '@/lib/errors'
-import { formatInviteCode, inviteLink } from '@/lib/inviteCode'
+import { formatInviteCode, inviteLink, inviteMessage } from '@/lib/inviteCode'
 import { ROLE_LABEL, can, canRemove, invitableRoles } from '@/lib/roles'
 import type { MemberRole } from '@/types/models'
 import { useUserId } from '@/features/auth/AuthProvider'
@@ -28,6 +28,7 @@ import {
   type Member,
 } from './api'
 import { useCurrentHousehold } from './HouseholdContext'
+import { InviteQr } from './InviteQr'
 import { inviteSchema } from './schemas'
 
 const dateFmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' })
@@ -214,9 +215,9 @@ function InviteSheet({
   const [copied, setCopied] = useState(false)
   type In = z.input<typeof inviteSchema>
   type Out = z.output<typeof inviteSchema>
-  const { register, handleSubmit, formState, reset } = useForm<In, unknown, Out>({
+  const { register, handleSubmit, reset } = useForm<In, unknown, Out>({
     resolver: zodResolver(inviteSchema),
-    defaultValues: { role: 'member', email: '' },
+    defaultValues: { role: 'member' },
   })
 
   const close = () => {
@@ -230,7 +231,7 @@ function InviteSheet({
   const link = code ? inviteLink(code) : ''
   const share = async () => {
     if (!code) return
-    const text = `Join “${household.name}” on KeyFinder. Invite code: ${formatInviteCode(code)}`
+    const text = inviteMessage(household.name, code)
     if (typeof navigator.share === 'function') {
       try {
         await navigator.share({ title: 'KeyFinder invite', text, url: link })
@@ -252,7 +253,11 @@ function InviteSheet({
       {code ? (
         <div className="flex flex-col gap-4">
           <p className="text-slate-600 dark:text-slate-400">
-            Share this link or code. It works once and expires in 7 days.
+            Works once and expires in 7 days. Only share it with the person you’re inviting.
+          </p>
+          <InviteQr link={link} />
+          <p className="text-center text-sm text-slate-600 dark:text-slate-400">
+            Nearby? In their KeyFinder app: <strong>Join with a code → Scan invite QR</strong>.
           </p>
           <p
             data-testid="invite-code"
@@ -300,15 +305,6 @@ function InviteSheet({
               </option>
             ))}
           </SelectField>
-          <TextField
-            label="Email (optional)"
-            type="email"
-            inputMode="email"
-            autoCapitalize="none"
-            hint="If set, only this email address can use the invite."
-            error={formState.errors.email?.message}
-            {...register('email')}
-          />
           {create.isError && <Banner tone="error">{errorMessage(create.error)}</Banner>}
           <Button type="submit" size="lg" loading={create.isPending}>
             Create invite

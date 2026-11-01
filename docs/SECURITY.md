@@ -2,7 +2,9 @@
 
 ## Authentication (who are you?)
 
-- Supabase Auth, **email OTP code**: `signInWithOtp({ email })` → user types the 6-digit code → `verifyOtp({ email, token, type: 'email' })`.
+- Supabase Auth, **email or phone + password** (D30): `signUp` / `signInWithPassword` with `{ email, password }` or `{ phone, password }`. Phones are normalised to E.164 (`src/lib/identifier.ts`; 10-digit numbers get +91). Passwords: min 8 (server `minimum_password_length`), max 72.
+- No email or SMS is sent: "Confirm email" and "Confirm phone" are off. Consequence: an account's email/phone is **not verified** — it is a login name, not proof of identity. Nothing may grant access based on it (invites are therefore not bound to an email any more; the single-use, expiring invite code is the protection).
+- Brute force: Supabase rate-limits sign-in/sign-up per IP (`sign_in_sign_ups`). No self-service reset; an admin resets a password with SQL (`docs/DEPLOY.md`). Signed-in users can change their password on the Account screen.
 - Why not magic links or OAuth: on iOS an installed PWA has its own storage, and links/redirects open in Safari, so the session never lands in the app.
 - Supabase issues a short-lived JWT access token plus a refresh token; supabase-js persists and refreshes them. Each request carries the JWT, and inside Postgres `auth.uid()` is the user.
 - The client holds only the anon/publishable key and the user's session. The `service_role` key must never ship to the client.
@@ -38,13 +40,13 @@ Membership is evaluated **live on every query** (no household claims inside the 
 
 ## Writes that go through RPCs only
 
-| RPC                                              | Why it's an RPC                                                                                       |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| `create_household(p_name, p_display_name)`       | Inserts the household and the owner membership atomically (RLS would block the first membership row). |
-| `create_invite(p_household_id, p_role, p_email)` | Generates a random code, stores only its SHA-256 hash, and returns the plaintext once.                |
-| `accept_invite(p_code, p_display_name)`          | Validates hash, expiry, single use and optional email binding, then adds the membership.              |
-| `remove_member(p_household_id, p_user_id)`       | Enforces the role rules above.                                                                        |
-| `leave_household(p_household_id)`                | Non-owners remove themselves.                                                                         |
+| RPC                                              | Why it's an RPC                                                                                                |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `create_household(p_name, p_display_name)`       | Inserts the household and the owner membership atomically (RLS would block the first membership row).          |
+| `create_invite(p_household_id, p_role, p_email)` | Generates a random code, stores only its SHA-256 hash, and returns the plaintext once.                         |
+| `accept_invite(p_code, p_display_name)`          | Validates hash, expiry, single use and the (legacy, unused by the UI) email binding, then adds the membership. |
+| `remove_member(p_household_id, p_user_id)`       | Enforces the role rules above.                                                                                 |
+| `leave_household(p_household_id)`                | Non-owners remove themselves.                                                                                  |
 
 There are no insert/update/delete policies on `memberships` and no insert policy on `invites` or `households`.
 
@@ -80,15 +82,17 @@ CSP + security headers from the host (see ARCHITECTURE.md › Security headers).
 
 ## Error mapping
 
-| Postgres / RPC error                    | User message                                                     |
-| --------------------------------------- | ---------------------------------------------------------------- |
-| `42501` (insufficient privilege / RLS)  | "You don't have permission to do that."                          |
-| `22023` from `accept_invite`            | "This invite is invalid, used or expired."                       |
-| `23505` on `doors(household_id, name)`  | "A door with that name already exists."                          |
-| `23505` on `keys(household_id, tag_id)` | "That tag is already assigned to another key."                   |
-| `P0002` from `remove_member`            | "That person is no longer a member." (refresh the list)          |
-| `28000`                                 | Session expired → redirect to login                              |
-| Network error                           | "You're offline. Lookups still work; changes need a connection." |
+| Postgres / RPC error                    | User message                                                               |
+| --------------------------------------- | -------------------------------------------------------------------------- |
+| `42501` (insufficient privilege / RLS)  | "You don't have permission to do that."                                    |
+| `22023` from `accept_invite`            | "This invite is invalid, used or expired."                                 |
+| `23505` on `doors(household_id, name)`  | "A door with that name already exists."                                    |
+| `23505` on `keys(household_id, tag_id)` | "That tag is already assigned to another key."                             |
+| `P0002` from `remove_member`            | "That person is no longer a member." (refresh the list)                    |
+| `28000`                                 | Session expired → redirect to login                                        |
+| Network error                           | "You're offline. Lookups still work; changes need a connection."           |
+| HTTP 5xx (incl. 502/503/504 timeouts)   | "The server had a problem. Please try again in a minute."                  |
+| HTTP 5xx while sending the sign-in code | "We couldn't send the email right now. Please try again in a few minutes." |
 
 ## Required RLS tests (pgTAP, `supabase/tests/`)
 

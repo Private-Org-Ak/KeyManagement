@@ -50,7 +50,7 @@ export function KeyDetailPage() {
       >
         <Icon name="chevronLeft" />
       </Link>
-      <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-300 via-accent-400 to-accent-600 p-5 text-slate-950 shadow-float">
+      <section className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-accent-300 via-accent-400 to-accent-600 p-5 text-slate-950 shadow-float">
         <div
           className="pointer-events-none absolute -top-10 -right-8 size-36 rounded-full bg-white/25"
           aria-hidden="true"

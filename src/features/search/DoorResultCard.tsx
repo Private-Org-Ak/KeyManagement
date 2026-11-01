@@ -25,7 +25,7 @@ export function DoorResultCard({
     <article
       aria-label={door ? `Door: ${door.name}` : 'Keys not assigned to a door'}
       className={cx(
-        'surface overflow-hidden',
+        'surface animate-rise overflow-hidden',
         highlight && 'ring-2! ring-emerald-400 dark:ring-emerald-400/70',
       )}
     >

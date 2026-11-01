@@ -44,12 +44,8 @@ export function HomePage() {
         onSubmit={(e) => {
           e.preventDefault()
         }}
-        className="bg-brand-gradient relative overflow-hidden rounded-[2rem] p-5 text-white shadow-float"
+        className="bg-brand-gradient relative overflow-hidden rounded-[1.5rem] p-5 text-white shadow-float"
       >
-        <div
-          className="pointer-events-none absolute -top-12 -right-12 size-44 rounded-full bg-white/10"
-          aria-hidden="true"
-        />
         <label
           htmlFor="key-search"
           className="relative block text-[26px] leading-tight font-extrabold tracking-tight"

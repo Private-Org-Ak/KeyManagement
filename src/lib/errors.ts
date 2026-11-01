@@ -5,7 +5,12 @@
 export type ErrorKind =
   | 'permission'
   | 'invite'
-  | 'bad-code'
+  | 'bad-login'
+  | 'account-exists'
+  | 'weak-password'
+  | 'same-password'
+  | 'auth-disabled'
+  | 'auth-setup'
   | 'duplicate-door'
   | 'duplicate-tag'
   | 'duplicate'
@@ -13,6 +18,7 @@ export type ErrorKind =
   | 'session'
   | 'offline'
   | 'rate-limit'
+  | 'server'
   | 'invalid'
   | 'unknown'
 
@@ -24,7 +30,14 @@ export interface AppError {
 const MESSAGES: Record<ErrorKind, string> = {
   permission: "You don't have permission to do that.",
   invite: 'This invite is invalid, used or expired.',
-  'bad-code': 'That code is wrong or has expired. Check the latest email or send a new code.',
+  'bad-login': 'Wrong email/phone or password.',
+  'account-exists': 'An account with this email or phone already exists. Sign in instead.',
+  'weak-password': 'Use a password of at least 8 characters.',
+  'same-password': 'That is already your password.',
+  'auth-disabled':
+    'Signing in with this is not turned on yet. Ask whoever set up KeyFinder to enable it.',
+  'auth-setup':
+    'Your account needs confirming before it can be used. Ask whoever set up KeyFinder to turn off “Confirm email” and “Confirm phone”.',
   'duplicate-door': 'A door with that name already exists.',
   'duplicate-tag': 'That tag is already assigned to another key.',
   duplicate: 'That already exists.',
@@ -32,6 +45,7 @@ const MESSAGES: Record<ErrorKind, string> = {
   session: 'Your session has expired. Please sign in again.',
   offline: "You're offline. Lookups still work; changes need a connection.",
   'rate-limit': 'Too many attempts. Please wait a moment and try again.',
+  server: 'The server had a problem. Please try again in a minute.',
   invalid: 'Please check what you entered and try again.',
   unknown: 'Something went wrong. Please try again.',
 }
@@ -50,7 +64,7 @@ export class PermissionDeniedError extends Error {
   override name = 'PermissionDeniedError'
 }
 
-export type ErrorContext = 'accept_invite' | 'verify_otp'
+export type ErrorContext = 'accept_invite' | 'sign_in'
 
 export function isOffline(): boolean {
   return typeof navigator !== 'undefined' && !navigator.onLine
@@ -65,13 +79,34 @@ export function toAppError(e: unknown, context?: ErrorContext): AppError {
 
   if (isOffline()) return make('offline')
   if (e instanceof TypeError && /fetch|network|load failed/i.test(e.message)) return make('offline')
+  const httpStatus = Number(status)
+  // supabase-js also uses AuthRetryableFetchError for 502/503/504 (e.g. the auth server timed
+  // out talking to SMTP). Only a status-less one is a real network failure.
+  if (httpStatus >= 500) return make('server')
   if (name === 'AuthRetryableFetchError') return make('offline')
 
-  if (
-    context === 'verify_otp' &&
-    (code === 'otp_expired' || code === 'invalid_otp' || status === '403')
-  )
-    return make('bad-code')
+  switch (code) {
+    case 'invalid_credentials':
+      return make('bad-login')
+    case 'user_already_exists':
+    case 'email_exists':
+    case 'phone_exists':
+      return make('account-exists')
+    case 'weak_password':
+      return make('weak-password')
+    case 'same_password':
+      return make('same-password')
+    case 'phone_provider_disabled':
+    case 'email_provider_disabled':
+    case 'signup_disabled':
+      return make('auth-disabled')
+    case 'email_not_confirmed':
+    case 'phone_not_confirmed':
+    case 'confirmation_required':
+      return make('auth-setup')
+  }
+  // Older auth servers answer a bad password with a bare 400.
+  if (context === 'sign_in' && status === '400') return make('bad-login')
 
   switch (code) {
     case '42501':

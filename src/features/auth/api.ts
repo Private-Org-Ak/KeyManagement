@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Session } from '@supabase/supabase-js'
 import { wipeAll } from '@/lib/db'
+import type { Identifier } from '@/lib/identifier'
 import { wipeLocal } from '@/lib/local'
 import { supabase } from '@/lib/supabase'
 
@@ -18,25 +19,43 @@ export function onAuthChange(cb: (session: Session | null) => void): () => void 
   }
 }
 
-/** Sends a 6-digit code. Creates the account on first use (no passwords). */
-export function useSendCode() {
+type Credentials = { id: Identifier; password: string }
+
+function credentials({ id, password }: Credentials) {
+  return id.kind === 'email' ? { email: id.email, password } : { phone: id.phone, password }
+}
+
+/** Email or phone + password (D30). No email or SMS is sent. */
+export function useSignIn() {
   return useMutation({
-    mutationFn: async (email: string) => {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: true },
-      })
+    mutationFn: async (c: Credentials) => {
+      const { error } = await supabase.auth.signInWithPassword(credentials(c))
       if (error) throw error
     },
   })
 }
 
-export function useVerifyCode() {
+/**
+ * Creates the account and signs in. Supabase must have "Confirm email" / "Confirm phone"
+ * turned off; otherwise no session comes back and we say so (docs/DEPLOY.md).
+ */
+export function useSignUp() {
   return useMutation({
-    mutationFn: async ({ email, token }: { email: string; token: string }) => {
-      const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+    mutationFn: async (c: Credentials) => {
+      const { data, error } = await supabase.auth.signUp(credentials(c))
       if (error) throw error
-      return data.session
+      // With confirmations on, an existing address also comes back as a session-less user.
+      if (!data.session)
+        throw Object.assign(new Error('confirmation'), { code: 'confirmation_required' })
+    },
+  })
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: async (password: string) => {
+      const { error } = await supabase.auth.updateUser({ password })
+      if (error) throw error
     },
   })
 }

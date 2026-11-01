@@ -4,6 +4,8 @@ import { createHome, localStack, login, nav, uniqueEmail } from './support/supab
 import { seedViaApi } from './support/seed'
 
 async function audit(page: Page, label: string) {
+  // Entrance animations fade content in; judge contrast on the settled screen.
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'))
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze()
@@ -49,6 +51,7 @@ test.describe('signed-in screens', () => {
       await expect(page.getByRole('heading', { name: 'Pending invites' })).toBeVisible()
       await audit(page, 'members')
       await nav(page, 'Settings').click()
+      await expect(page.getByRole('heading', { name: 'Home settings' })).toBeVisible()
       await audit(page, 'settings')
       await nav(page, 'Scan').click()
       await audit(page, 'scan')

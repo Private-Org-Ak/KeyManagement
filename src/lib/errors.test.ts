@@ -41,12 +41,24 @@ describe('toAppError', () => {
   })
 
   it('maps a wrong/expired OTP when verifying', () => {
-    expect(toAppError({ code: 'otp_expired', status: 403 }, 'verify_otp').kind).toBe('bad-code')
+    expect(toAppError({ code: 'invalid_credentials', status: 400 }).kind).toBe('bad-login')
+    expect(toAppError({ status: 400 }, 'sign_in').kind).toBe('bad-login')
+    expect(toAppError({ code: 'user_already_exists', status: 422 }).kind).toBe('account-exists')
+    expect(toAppError({ code: 'weak_password', status: 422 }).kind).toBe('weak-password')
+    expect(toAppError({ code: 'phone_provider_disabled' }).kind).toBe('auth-disabled')
+    expect(toAppError({ code: 'confirmation_required' }).kind).toBe('auth-setup')
   })
 
   it('reports offline when the browser is offline', () => {
     vi.stubGlobal('navigator', { onLine: false })
     expect(toAppError({ code: '42501' }).kind).toBe('offline')
+  })
+
+  it('does not call a server timeout "offline"', () => {
+    const timeout = { name: 'AuthRetryableFetchError', status: 504, message: 'Gateway Timeout' }
+    expect(toAppError(timeout).kind).toBe('server')
+    expect(toAppError({ name: 'AuthApiError', status: 500 }, 'sign_in').kind).toBe('server')
+    expect(toAppError({ name: 'AuthRetryableFetchError', status: 0 }).kind).toBe('offline')
   })
 
   it('maps fetch failures to offline', () => {

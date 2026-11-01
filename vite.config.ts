@@ -81,8 +81,8 @@ export default defineConfig(({ mode }) => {
         scope: '/',
         display: 'standalone',
         orientation: 'portrait',
-        theme_color: '#5a45e6',
-        background_color: '#f4f5fb',
+        theme_color: '#edeceb',
+        background_color: '#edeceb',
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -95,7 +95,7 @@ export default defineConfig(({ mode }) => {
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}', '**/inter-latin-*.woff2'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [SUPABASE_PATHS],
         // Supabase is always a different origin, so the navigation fallback never touches it.

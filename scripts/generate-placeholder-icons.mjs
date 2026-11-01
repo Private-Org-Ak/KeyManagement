@@ -3,8 +3,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { deflateSync } from 'node:zlib'
 
-const BG = [90, 69, 230] // brand-600
-const FG = [247, 204, 108] // accent-300 (brass)
+const BG = [13, 13, 15] // ink
+const FG = [255, 255, 255] // white glyph
 
 function crc32(buf) {
   let c

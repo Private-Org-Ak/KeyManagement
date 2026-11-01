@@ -182,7 +182,7 @@ enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 6
+minimum_password_length = 8
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
@@ -247,20 +247,7 @@ otp_expiry = 600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# KeyFinder: login is a 6-digit code typed into the app (iOS PWA can't receive magic links).
-# Production: paste supabase/templates/otp.html into BOTH dashboard templates (docs/DEPLOY.md).
-# Locally, `content_path` makes `supabase start` fail on Colima (the CLI's `docker cp` of the
-# template errors with "destination / must be a directory"), so it's commented out and the local
-# email has a link only. Get a code with `npm run dev:code -- <email>`. On Docker Desktop /
-# OrbStack you can uncomment the content_path lines to get the code in Mailpit instead.
-[auth.email.template.magic_link]
-subject = "Your KeyFinder code"
-# content_path = "./supabase/templates/otp.html"
-
-[auth.email.template.confirmation]
-subject = "Your KeyFinder code"
-# content_path = "./supabase/templates/otp.html"
-
+# KeyFinder: sign-in is email or phone + password (D30); no auth emails are sent.
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
@@ -274,7 +261,7 @@ subject = "Your KeyFinder code"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
-enable_signup = false
+enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 # Template for sending OTP to users
@@ -305,12 +292,14 @@ max_frequency = "5s"
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
+# KeyFinder: phone + password sign-in (D30). Supabase only enables phone login when an SMS
+# provider is configured, but with `[auth.sms] enable_confirmations = false` no SMS is ever
+# sent, so placeholder values are enough. These are NOT real credentials.
 [auth.sms.twilio]
-enabled = false
-account_sid = ""
-message_service_sid = ""
-# DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
-auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+enabled = true
+account_sid = "ACplaceholder-no-sms-is-sent"
+message_service_sid = "MGplaceholder-no-sms-is-sent"
+auth_token = "placeholder-no-sms-is-sent"
 
 # Multi-factor-authentication is available to Supabase Pro plan.
 [auth.mfa]

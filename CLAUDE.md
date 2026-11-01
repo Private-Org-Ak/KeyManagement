@@ -18,7 +18,7 @@ Real-world target: a home with ~10 rooms, each with an attached washroom → ~20
 - Vite + React + TypeScript (strict), React Router, TanStack Query, react-hook-form + Zod
 - Tailwind CSS (mobile-first, light/dark)
 - `vite-plugin-pwa` (Workbox) for installability + offline shell
-- Supabase: Auth (email OTP code), Postgres with RLS, Storage (private bucket `key-photos`)
+- Supabase: Auth (email or phone + password; no auth emails/SMS), Postgres with RLS, Storage (private bucket `key-photos`)
 - Dexie (IndexedDB) for the offline household cache
 - Fuse.js + small Levenshtein helper for key-number matching
 - Tesseract.js for OCR (lazy-loaded, self-hosted language data)
@@ -48,7 +48,6 @@ npm run db:test      # supabase test db (pgTAP RLS tests)
 npm run db:test:nomount  # same tests via docker cp (if Docker cannot mount this folder)
 npm run db:types     # supabase gen types typescript --local > src/types/database.ts
 npm run icons        # regenerate placeholder PWA icons
-npm run dev:code -- <email>  # LOCAL ONLY: print a sign-in code (local email has no code on Colima)
 ```
 
 ## Project structure
@@ -57,7 +56,7 @@ npm run dev:code -- <email>  # LOCAL ONLY: print a sign-in code (local email has
 src/
   app/            router, providers, layout, error boundary
   features/
-    auth/         login (email → OTP), session guard
+    auth/         login (email/phone + password), session guard
     households/   onboarding, switcher, members, invites, join
     doors/        list, detail, quick-add (room + washroom)
     keys/         detail/edit, photo upload, holder
@@ -107,13 +106,14 @@ docs/
 
 ## Gotchas
 
-- **iOS installed PWAs have storage separate from Safari.** Magic links and OAuth redirects open in Safari, not the PWA, so the session never reaches the app → login uses a **6-digit email OTP code** typed into the app.
+- **iOS installed PWAs have storage separate from Safari.** Magic links and OAuth redirects open in Safari, not the PWA, so the session never reaches the app → login is **email or phone + password** typed into the app (D30). Nothing is sent by email or SMS.
+- Supabase only enables phone login when an SMS provider is configured. With phone confirmations off no SMS is sent, so placeholder Twilio values are enough (local `config.toml` and `docs/DEPLOY.md`). "Confirm email" and "Confirm phone" must be **off**, or sign-up returns no session.
+- No self-service password reset (it would need email/SMS). Reset is an admin SQL step in `docs/DEPLOY.md`. Local seed users: `alice@example.test` / `bob@example.test` or `+919800000002`, password `keyfinder-dev`.
 - Web NFC exists only in Chrome on Android. Feature-detect `'NDEFReader' in window`; hide NFC elsewhere. iPhone users use QR.
 - `BarcodeDetector` is missing on iOS Safari → fall back to `@zxing/browser`.
 - Camera (`getUserMedia`) requires HTTPS → use `npm run dev:https` for phone testing on LAN.
 - iOS has no `beforeinstallprompt`; show manual "Share → Add to Home Screen" instructions.
-- Supabase's built-in email sender is heavily rate-limited; production needs custom SMTP. The OTP email template must include `{{ .Token }}`.
 - Service worker behaviour can't be judged in `npm run dev`; use `npm run build && npm run preview`.
 - `npm run test:e2e` needs the local Supabase stack running; it builds and serves `preview` (with the production CSP) itself.
-- Colima on macOS can't bind-mount folders under `~/Documents`: Studio, `supabase test db` and the custom OTP email template fail (the template's `content_path` is commented out in `config.toml` so `supabase start` works; use `npm run dev:code -- <email>` to sign in locally). Use `npm run db:test:nomount`, or move the repo / switch to Docker Desktop or OrbStack.
+- Colima on macOS can't bind-mount folders under `~/Documents`: Studio and `supabase test db` fail. Use `npm run db:test:nomount`, or move the repo / switch to Docker Desktop or OrbStack. After editing `config.toml`, run `npx supabase stop --no-backup && npx supabase start -x studio` (restarting Colima alone revives containers with the old config).
 - Production setup is in `docs/DEPLOY.md`.

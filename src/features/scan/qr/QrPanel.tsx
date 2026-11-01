@@ -4,7 +4,15 @@ import { CameraView, QR_GUIDE } from '../CameraView'
 import { startQrScan } from './decoder'
 
 /** Continuously decodes QR codes while active; calls onText once per distinct payload. */
-export function QrPanel({ active, onText }: { active: boolean; onText: (text: string) => void }) {
+export function QrPanel({
+  active,
+  onText,
+  hint = 'Point at the QR tag on the key ring',
+}: {
+  active: boolean
+  onText: (text: string) => void
+  hint?: string
+}) {
   const { videoRef, state } = useCamera(active)
   const last = useRef<{ text: string; at: number } | null>(null)
   const cb = useRef(onText)
@@ -24,12 +32,5 @@ export function QrPanel({ active, onText }: { active: boolean; onText: (text: st
     })
   }, [active, state, videoRef])
 
-  return (
-    <CameraView
-      videoRef={videoRef}
-      state={state}
-      guide={QR_GUIDE}
-      hint="Point at the QR tag on the key ring"
-    />
-  )
+  return <CameraView videoRef={videoRef} state={state} guide={QR_GUIDE} hint={hint} />
 }

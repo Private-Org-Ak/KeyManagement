@@ -28,6 +28,15 @@ test('assign a QR tag with the camera, then scanning it shows the door', async (
   })
 })
 
+test('the join form scans QR codes and rejects ones that are not invites', async ({ page }) => {
+  await login(page, uniqueEmail('joinqr'))
+  await page.getByRole('tab', { name: 'Join with a code' }).click()
+  await page.getByRole('button', { name: 'Scan invite QR' }).click()
+  // The fake camera shows a key-ring tag (kf1:…), not an invite link.
+  await expect(page.getByText('That isn’t a KeyFinder invite.')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByLabel('Invite code')).toHaveValue('')
+})
+
 test('camera tracks are stopped when leaving the scan screen', async ({ page }) => {
   await page.addInitScript(() => {
     const w = window as unknown as { __streams: MediaStream[] }

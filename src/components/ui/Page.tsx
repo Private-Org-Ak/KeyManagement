@@ -33,7 +33,7 @@ export function PageHeader({
             {eyebrow}
           </p>
         )}
-        <h1 className="truncate text-[28px] leading-tight font-extrabold tracking-tight">
+        <h1 className="truncate text-[30px] leading-[1.05] font-extrabold tracking-tight">
           {title}
         </h1>
         {subtitle && (

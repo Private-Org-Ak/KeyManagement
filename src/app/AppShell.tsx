@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, NavLink, Outlet, useMatch } from 'react-router'
+import { Link, NavLink, Outlet, useLocation, useMatch } from 'react-router'
 import { Icon, Sheet, cx, type IconName } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { useHousehold, useHouseholds } from '@/features/households/api'
@@ -14,7 +14,8 @@ function initial(text: string | null | undefined): string {
 export function AppShell() {
   const match = useMatch('/h/:hid/*')
   const hid = match?.params.hid ?? null
-  const { session, email } = useAuth()
+  const { session, account } = useAuth()
+  const { pathname } = useLocation()
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -25,7 +26,7 @@ export function AppShell() {
         Skip to content
       </a>
       {session && (
-        <header className="pt-safe px-safe sticky top-0 z-30 bg-canvas/80 backdrop-blur-xl dark:bg-canvas-dark/80">
+        <header className="pt-safe px-safe animate-header-in sticky top-0 z-30 bg-canvas/75 backdrop-blur-xl backdrop-saturate-150 dark:bg-canvas-dark/75">
           <div className="mx-auto flex h-16 max-w-2xl items-center gap-2">
             {hid ? (
               <HouseholdSwitcher hid={hid} />
@@ -41,9 +42,13 @@ export function AppShell() {
             <Link
               to="/account"
               aria-label="Account"
-              className="ml-auto inline-flex size-11 items-center justify-center rounded-2xl bg-white text-sm font-bold text-brand-700 shadow-card ring-1 ring-slate-900/5 dark:bg-surface-dark-2 dark:text-brand-200 dark:ring-white/10"
+              className="ml-auto inline-flex size-11 items-center justify-center glass rounded-2xl text-sm font-bold text-slate-900 dark:text-slate-100"
             >
-              {initial(email)}
+              {account?.startsWith('+') ? (
+                <Icon name="user" className="size-5" />
+              ) : (
+                initial(account)
+              )}
             </Link>
           </div>
         </header>
@@ -56,7 +61,9 @@ export function AppShell() {
           hid ? 'pb-32' : 'pb-safe pb-8',
         )}
       >
-        <Outlet />
+        <div key={pathname} className="page-enter">
+          <Outlet />
+        </div>
       </main>
       {hid && <BottomNav hid={hid} />}
       <UpdateToast />
@@ -176,8 +183,8 @@ const NAV: {
 
 function BottomNav({ hid }: { hid: string }) {
   return (
-    <nav aria-label="Main" className="pb-safe px-safe fixed inset-x-0 bottom-0 z-30">
-      <ul className="mx-auto mb-3 grid max-w-md grid-cols-5 items-end rounded-[1.75rem] bg-white/90 px-1 py-1.5 shadow-float ring-1 ring-slate-900/5 backdrop-blur-xl dark:bg-surface-dark/90 dark:ring-white/10">
+    <nav aria-label="Main" className="pb-safe px-safe animate-nav-in fixed inset-x-0 bottom-0 z-30">
+      <ul className="mx-auto mb-3 glass grid max-w-md grid-cols-5 items-end rounded-[1.375rem] px-1 py-1.5">
         {NAV.map((item) => {
           const to = `/h/${hid}${item.to ? `/${item.to}` : ''}`
           if (item.label === 'Scan') {
@@ -191,7 +198,7 @@ function BottomNav({ hid }: { hid: string }) {
                     <>
                       <span
                         className={cx(
-                          'bg-brand-gradient -mt-7 flex size-14 items-center justify-center rounded-2xl text-white shadow-float ring-4 ring-canvas transition group-active:scale-95 dark:ring-canvas-dark',
+                          'bg-brand-gradient -mt-7 flex size-14 items-center justify-center rounded-2xl text-white shadow-float ring-4 ring-canvas transition duration-300 ease-soft group-hover:-translate-y-0.5 group-active:scale-95 dark:ring-canvas-dark',
                           isActive && 'brightness-110',
                         )}
                       >
@@ -200,7 +207,7 @@ function BottomNav({ hid }: { hid: string }) {
                       <span
                         className={
                           isActive
-                            ? 'text-brand-700 dark:text-brand-300'
+                            ? 'text-slate-950 dark:text-white'
                             : 'text-slate-600 dark:text-slate-400'
                         }
                       >
@@ -221,7 +228,7 @@ function BottomNav({ hid }: { hid: string }) {
                   cx(
                     'flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[11px] font-semibold transition',
                     isActive
-                      ? 'text-brand-700 dark:text-brand-300'
+                      ? 'text-slate-950 dark:text-white'
                       : 'text-slate-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200',
                   )
                 }
@@ -231,7 +238,7 @@ function BottomNav({ hid }: { hid: string }) {
                     <span
                       className={cx(
                         'flex h-8 w-12 items-center justify-center rounded-full transition',
-                        isActive && 'bg-brand-50 dark:bg-brand-500/20',
+                        isActive && 'animate-pop bg-black/[0.06] dark:bg-white/10',
                       )}
                     >
                       <Icon name={item.icon} className="size-[22px]" />

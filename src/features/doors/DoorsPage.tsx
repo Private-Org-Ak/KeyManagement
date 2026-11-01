@@ -42,16 +42,8 @@ export function DoorsPage() {
     <div className="flex flex-col gap-6">
       <section
         aria-label="Overview"
-        className="bg-brand-gradient relative overflow-hidden rounded-[2rem] p-5 text-white shadow-float"
+        className="bg-brand-gradient relative overflow-hidden rounded-[1.5rem] p-5 text-white shadow-float"
       >
-        <div
-          className="pointer-events-none absolute -top-10 -right-10 size-40 rounded-full bg-white/10"
-          aria-hidden="true"
-        />
-        <div
-          className="pointer-events-none absolute -bottom-14 left-1/3 size-32 rounded-full bg-accent-400/20"
-          aria-hidden="true"
-        />
         <div className="relative">
           <h1 className="text-[28px] leading-tight font-extrabold tracking-tight">Doors</h1>
           <p className="text-sm text-white/80">
@@ -80,7 +72,7 @@ export function DoorsPage() {
               to={`/h/${hid}/doors/quick-keys`}
               variant="secondary"
               aria-disabled={!online}
-              className="mt-4 w-full bg-white! text-brand-700! ring-0!"
+              className="mt-4 w-full bg-white! text-slate-950! ring-0!"
             >
               <Icon name="bolt" className="size-4" />
               Quick add keys

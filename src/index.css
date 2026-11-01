@@ -1,25 +1,37 @@
 @import 'tailwindcss';
 
 /*
- * KeyFinder design tokens.
- * brand  = indigo/violet (primary actions, active states)
+ * KeyFinder design tokens — "CoolDock" look: warm paper canvas, crisp white cards,
+ * ink-black primary actions, one electric-blue accent, heavy tight display type.
+ * brand  = electric blue (links, active states, focus)
  * accent = brass/amber (keys, highlights)
- * Surfaces are slightly tinted; dark mode uses a deep navy, not pure black.
+ * slate  = remapped to warm neutrals so every existing slate-* class follows the palette.
+ * Dark mode uses warm near-black surfaces, not navy.
  */
 @theme {
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans:
+    'Inter Variable', 'Inter', system-ui, -apple-system, 'SF Pro Display', 'Segoe UI', Roboto,
+    sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
 
-  --color-brand-50: #eef0ff;
-  --color-brand-100: #e0e3ff;
-  --color-brand-200: #c6cbff;
-  --color-brand-300: #a3a8fe;
-  --color-brand-400: #8183fa;
-  --color-brand-500: #6a63f3;
-  --color-brand-600: #5a45e6;
-  --color-brand-700: #4c37cb;
-  --color-brand-800: #3e2fa4;
-  --color-brand-900: #352d82;
+  /* Heavy-but-not-black display weight and tight tracking for headings. */
+  --font-weight-extrabold: 760;
+  --tracking-tight: -0.035em;
+
+  /* Softer, CoolDock-like radii: 13px controls, 20px cards. */
+  --radius-2xl: 0.8125rem;
+  --radius-3xl: 1.25rem;
+
+  --color-brand-50: #eef5ff;
+  --color-brand-100: #d9e8ff;
+  --color-brand-200: #bcd7ff;
+  --color-brand-300: #8ebeff;
+  --color-brand-400: #4d94ff;
+  --color-brand-500: #006fff;
+  --color-brand-600: #0062e6;
+  --color-brand-700: #0050c0;
+  --color-brand-800: #00429c;
+  --color-brand-900: #0a377a;
 
   --color-accent-100: #fdf2d7;
   --color-accent-200: #fbe3a8;
@@ -29,13 +41,75 @@
   --color-accent-600: #b97412;
   --color-accent-700: #8f5713;
 
-  --color-canvas: #f4f5fb;
-  --color-canvas-dark: #0a0e1f;
-  --color-surface-dark: #131a30;
-  --color-surface-dark-2: #1b2340;
+  --color-slate-50: #f7f7f6;
+  --color-slate-100: #efeeed;
+  --color-slate-200: #e2e1df;
+  --color-slate-300: #cfcecb;
+  --color-slate-400: #9d9da0;
+  --color-slate-500: #7a7b7f;
+  --color-slate-600: #65666a;
+  --color-slate-700: #45464a;
+  --color-slate-800: #2a2a2d;
+  --color-slate-900: #161618;
+  --color-slate-950: #0b0b0c;
 
-  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px -4px rgb(15 23 42 / 0.08);
-  --shadow-float: 0 10px 30px -8px rgb(30 27 75 / 0.35);
+  --color-ink: #000;
+  --color-canvas: #edeceb;
+  --color-canvas-dark: #0c0c0d;
+  --color-surface-dark: #18181a;
+  --color-surface-dark-2: #222225;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.03), 0 12px 40px -14px rgb(26 30 35 / 0.14);
+  --shadow-float: 0 12px 30px -8px rgb(0 0 0 / 0.28);
+
+  /*
+   * Motion (CoolDock): one soft ease-out curve; content rises in from a blur.
+   * Fill mode is `backwards` on purpose — once finished, no transform/filter is left
+   * on the element (a lingering filter would re-parent fixed descendants).
+   */
+  --ease-soft: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --animate-rise: kf-rise 0.6s var(--ease-soft) backwards;
+  --animate-pop: kf-pop 0.4s var(--ease-soft) backwards;
+  --animate-header-in: kf-header-in 0.7s var(--ease-soft) backwards;
+  --animate-nav-in: kf-nav-in 0.7s var(--ease-soft) 0.12s backwards;
+  --animate-sheet-up: kf-sheet-up 0.45s var(--ease-soft) backwards;
+  --animate-fade: kf-fade 0.3s ease-out backwards;
+
+  @keyframes kf-rise {
+    from {
+      opacity: 0;
+      filter: blur(8px);
+      translate: 0 14px;
+    }
+  }
+  @keyframes kf-pop {
+    from {
+      opacity: 0;
+      scale: 0.94;
+    }
+  }
+  @keyframes kf-header-in {
+    from {
+      opacity: 0;
+      translate: 0 -20px;
+    }
+  }
+  @keyframes kf-nav-in {
+    from {
+      opacity: 0;
+      translate: 0 32px;
+    }
+  }
+  @keyframes kf-sheet-up {
+    from {
+      translate: 0 100%;
+    }
+  }
+  @keyframes kf-fade {
+    from {
+      opacity: 0;
+    }
+  }
 }
 
 @layer base {
@@ -45,6 +119,7 @@
     *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
+      animation-delay: 0s !important;
       transition-duration: 0.01ms !important;
     }
   }
@@ -56,6 +131,24 @@
     @apply min-h-dvh bg-canvas text-slate-900 antialiased dark:bg-canvas-dark dark:text-slate-100;
     overscroll-behavior-y: none;
   }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  /* Tappable cards give a gentle press. */
+  :where(a, button).surface {
+    transition:
+      scale 0.2s var(--ease-soft),
+      box-shadow 0.2s var(--ease-soft),
+      background-color 0.2s ease;
+  }
+  :where(a, button).surface:active {
+    scale: 0.985;
+  }
+  dialog[open]::backdrop {
+    animation: var(--animate-fade);
+  }
   ::selection {
     @apply bg-brand-200 text-brand-900;
   }
@@ -63,14 +156,65 @@
 
 /* Elevated card surface (light + dark). */
 @utility surface {
-  @apply rounded-3xl bg-white shadow-card ring-1 ring-slate-900/5 dark:bg-surface-dark dark:shadow-none dark:ring-white/8;
+  @apply rounded-3xl bg-white shadow-card ring-1 ring-black/5 dark:bg-surface-dark dark:shadow-none dark:ring-white/8;
 }
-/* Brand gradient used by hero areas and the primary button. */
+/*
+ * Hero / emphasis tile: ink black with a soft electric-blue glow in the corner.
+ * (Name kept from the old violet gradient so call sites don't change.)
+ */
 @utility bg-brand-gradient {
-  background-image: linear-gradient(135deg, #5a45e6 0%, #7a3fe0 55%, #9b4bd8 100%);
+  background-color: #0d0d0f;
+  background-image:
+    radial-gradient(110% 90% at 100% 0%, rgb(0 111 255 / 0.38) 0%, transparent 55%),
+    linear-gradient(180deg, #1c1c20 0%, #0d0d0f 100%);
+  @media (prefers-color-scheme: dark) {
+    background-color: #1a1a1e;
+    background-image:
+      radial-gradient(110% 90% at 100% 0%, rgb(0 111 255 / 0.42) 0%, transparent 55%),
+      linear-gradient(180deg, #26262b 0%, #18181b 100%);
+  }
+}
+/* Frosted bar (top header, bottom tab bar), like CoolDock's floating nav. */
+@utility glass {
+  background-color: rgb(255 255 255 / 0.8);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow:
+    inset 1px 1px 1px #fff,
+    0 16px 32px -8px rgb(0 0 0 / 0.14);
+  @media (prefers-color-scheme: dark) {
+    background-color: rgb(28 28 31 / 0.8);
+    box-shadow:
+      inset 1px 1px 0 rgb(255 255 255 / 0.07),
+      0 16px 32px -8px rgb(0 0 0 / 0.5);
+  }
+}
+/*
+ * Route entrance: each block of the page rises in, staggered (applied to a wrapper
+ * keyed by pathname in AppShell, so it replays on navigation).
+ */
+@utility page-enter {
+  & > * > * {
+    animation: var(--animate-rise);
+  }
+  & > * > *:nth-child(2) {
+    animation-delay: 70ms;
+  }
+  & > * > *:nth-child(3) {
+    animation-delay: 140ms;
+  }
+  & > * > *:nth-child(4) {
+    animation-delay: 210ms;
+  }
+  & > * > *:nth-child(5) {
+    animation-delay: 280ms;
+  }
+  & > * > *:nth-child(n + 6) {
+    animation-delay: 340ms;
+  }
 }
 @utility text-gradient {
-  background-image: linear-gradient(90deg, #5a45e6, #b14bd1);
+  background-image: linear-gradient(90deg, #000, #006fff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

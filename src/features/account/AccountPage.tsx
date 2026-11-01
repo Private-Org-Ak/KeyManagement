@@ -1,31 +1,60 @@
-import { useQuery } from '@tanstack/react-query'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useId, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router'
-import { Banner, Button, Card, PageHeader, CardHeader } from '@/components/ui'
+import { z } from 'zod'
+import { Banner, Button, Icon, PageHeader, SectionTitle, TextField, cx } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { useSignOut } from '@/features/auth/api'
-import { isIos, isStandalone, useInstallPrompt } from '@/lib/install'
+import { useChangePassword, useSignOut } from '@/features/auth/api'
+import { newPassword } from '@/features/auth/schemas'
 import { errorMessage } from '@/lib/errors'
 
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`
-  if (n < 1024 ** 2) return `${(n / 1024).toFixed(0)} KB`
-  return `${(n / 1024 ** 2).toFixed(1)} MB`
-}
-
 export function AccountPage() {
-  const { email } = useAuth()
+  const { account } = useAuth()
   const signOut = useSignOut()
   const navigate = useNavigate()
+  const isPhone = account?.startsWith('+') ?? false
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Account" back="/" />
-      <Card className="flex flex-col gap-3">
-        <p className="text-sm text-slate-600 dark:text-slate-400">Signed in as</p>
-        <p className="font-medium break-all">{email}</p>
+
+      <section
+        aria-label="Profile"
+        className="bg-brand-gradient flex items-center gap-4 rounded-[1.5rem] p-5 text-white shadow-float"
+      >
+        <span
+          className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white text-2xl font-extrabold text-slate-950 shadow-card"
+          aria-hidden="true"
+        >
+          {isPhone ? (
+            <Icon name="user" className="size-7" />
+          ) : (
+            (account?.trim()[0] ?? 'K').toUpperCase()
+          )}
+        </span>
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-white/75 uppercase">
+            <Icon name={isPhone ? 'phone' : 'mail'} className="size-3.5" />
+            Signed in with {isPhone ? 'phone' : 'email'}
+          </p>
+          <p className="mt-0.5 text-lg leading-snug font-bold tracking-tight break-all">
+            {account}
+          </p>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <SectionTitle>Security</SectionTitle>
+        <ChangePasswordRow />
+      </section>
+
+      <section className="flex flex-col gap-2">
         {signOut.isError && <Banner tone="error">{errorMessage(signOut.error)}</Banner>}
         <Button
           variant="secondary"
+          size="lg"
+          className="w-full text-red-600! dark:text-red-400!"
           loading={signOut.isPending}
           onClick={() => {
             signOut.mutate(undefined, {
@@ -35,88 +64,106 @@ export function AccountPage() {
             })
           }}
         >
+          <Icon name="logout" />
           Sign out
         </Button>
-        <p className="text-xs text-slate-600 dark:text-slate-400">
+        <p className="px-4 text-center text-xs text-slate-600 dark:text-slate-400">
           Signing out removes all homes, keys and photos stored on this device.
         </p>
-      </Card>
-      <InstallCard />
-      <StorageCard />
+      </section>
     </div>
   )
 }
 
-export function InstallCard() {
-  const { canPrompt, prompt } = useInstallPrompt()
-  if (isStandalone()) {
-    return (
-      <Card>
-        <CardHeader icon="check" title="App installed" tone="emerald" />
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          KeyFinder is running as an installed app.
-        </p>
-      </Card>
-    )
-  }
+const changePasswordSchema = z
+  .object({ password: newPassword, confirm: z.string() })
+  .refine((v) => v.password === v.confirm, {
+    message: 'The passwords don’t match.',
+    path: ['confirm'],
+  })
+
+/** Collapsed row; the form mounts only when expanded (fields reset on collapse). */
+function ChangePasswordRow() {
+  const [open, setOpen] = useState(false)
+  const panelId = useId()
   return (
-    <Card className="flex flex-col gap-3">
-      <CardHeader icon="phone" title="Install KeyFinder" />
-      <p className="text-sm text-slate-600 dark:text-slate-400">
-        Installing puts KeyFinder on your home screen and lets you look up keys without internet.
-      </p>
-      {isIos() ? (
-        <ol className="list-decimal space-y-1 pl-5 text-sm">
-          <li>
-            Open this page in <strong>Safari</strong>.
-          </li>
-          <li>
-            Tap the <strong>Share</strong> button (square with an arrow).
-          </li>
-          <li>
-            Choose <strong>Add to Home Screen</strong>, then <strong>Add</strong>.
-          </li>
-          <li>Open KeyFinder from your home screen and sign in there.</li>
-        </ol>
-      ) : canPrompt ? (
-        <Button onClick={() => void prompt()}>Install app</Button>
-      ) : (
-        <p className="text-sm">
-          In Chrome, open the menu <strong>⋮</strong> and choose <strong>Install app</strong> or{' '}
-          <strong>Add to Home screen</strong>.
-        </p>
-      )}
-    </Card>
+    <div className="surface overflow-hidden">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => {
+          setOpen((o) => !o)
+        }}
+        className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-black/[0.02] dark:hover:bg-white/[0.03]"
+      >
+        <span
+          className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300"
+          aria-hidden="true"
+        >
+          <Icon name="shield" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-bold">Change password</span>
+          <span className="block text-sm text-slate-600 dark:text-slate-400">
+            Set a new sign-in password
+          </span>
+        </span>
+        <Icon
+          name="chevronDown"
+          className={cx(
+            'size-5 shrink-0 text-slate-400 transition-transform duration-300 ease-soft',
+            open && 'rotate-180',
+          )}
+        />
+      </button>
+      <div id={panelId} hidden={!open}>
+        {open && <ChangePasswordForm />}
+      </div>
+    </div>
   )
 }
 
-function StorageCard() {
-  const q = useQuery({
-    queryKey: ['device', 'storage'],
-    networkMode: 'always',
-    queryFn: async () => {
-      const storage = (navigator as { storage?: StorageManager }).storage
-      const persisted = storage ? await storage.persisted() : false
-      const est: StorageEstimate = storage ? await storage.estimate() : {}
-      return { persisted, usage: est.usage ?? 0, quota: est.quota ?? 0 }
-    },
+function ChangePasswordForm() {
+  const change = useChangePassword()
+  type In = z.input<typeof changePasswordSchema>
+  type Out = z.output<typeof changePasswordSchema>
+  const { register, handleSubmit, formState, reset } = useForm<In, unknown, Out>({
+    resolver: zodResolver(changePasswordSchema),
   })
   return (
-    <Card className="flex flex-col gap-1">
-      <CardHeader icon="shield" title="Offline storage" tone="emerald" />
-      {q.data && (
-        <>
-          <p className="text-sm">
-            Using {formatBytes(q.data.usage)}
-            {q.data.quota ? ` of ${formatBytes(q.data.quota)}` : ''}.
-          </p>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            {q.data.persisted
-              ? 'Protected: your browser won’t clear this data automatically.'
-              : 'Not protected yet — install the app so the browser keeps your offline data.'}
-          </p>
-        </>
-      )}
-    </Card>
+    <form
+      noValidate
+      className="animate-rise flex flex-col gap-3 border-t border-black/5 px-4 pt-4 pb-4 dark:border-white/8"
+      onSubmit={(e) => {
+        void handleSubmit(({ password }) => {
+          change.mutate(password, {
+            onSuccess: () => {
+              reset()
+            },
+          })
+        })(e)
+      }}
+    >
+      <TextField
+        label="New password"
+        type="password"
+        autoComplete="new-password"
+        error={formState.errors.password?.message}
+        {...register('password')}
+      />
+      <TextField
+        label="Repeat new password"
+        type="password"
+        autoComplete="new-password"
+        error={formState.errors.confirm?.message}
+        {...register('confirm')}
+      />
+      {change.isError && <Banner tone="error">{errorMessage(change.error)}</Banner>}
+      {change.isSuccess && <Banner tone="success">Password changed.</Banner>}
+      <Button type="submit" loading={change.isPending}>
+        Save new password
+      </Button>
+    </form>
   )
 }

@@ -7,11 +7,7 @@ export function JoinPage() {
   const { code = '' } = useParams()
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-5">
-      <div className="bg-brand-gradient relative overflow-hidden rounded-[2rem] p-6 text-white shadow-float">
-        <div
-          className="pointer-events-none absolute -top-12 -right-12 size-44 rounded-full bg-white/10"
-          aria-hidden="true"
-        />
+      <div className="bg-brand-gradient relative overflow-hidden rounded-[1.5rem] p-6 text-white shadow-float">
         <div className="relative">
           <h1 className="text-[28px] leading-tight font-extrabold tracking-tight">Join a home</h1>
           <p className="mt-1.5 text-white/85">

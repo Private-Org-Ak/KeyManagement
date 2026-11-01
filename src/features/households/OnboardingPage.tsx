@@ -1,11 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router'
 import type { z } from 'zod'
-import { Banner, Button, Card, TextField, cx } from '@/components/ui'
+import { Banner, Button, Card, Sheet, TextField, cx } from '@/components/ui'
 import { errorMessage } from '@/lib/errors'
-import { formatInviteCode } from '@/lib/inviteCode'
+import { formatInviteCode, parseInvitePayload } from '@/lib/inviteCode'
+import { QrPanel } from '@/features/scan/qr/QrPanel'
 import { useUserId } from '@/features/auth/AuthProvider'
 import { useAcceptInvite, useCreateHousehold, useHouseholds } from './api'
 import { createHouseholdSchema, joinSchema } from './schemas'
@@ -19,11 +20,7 @@ export function OnboardingPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-5">
-      <div className="bg-brand-gradient relative overflow-hidden rounded-[2rem] p-6 text-white shadow-float">
-        <div
-          className="pointer-events-none absolute -top-12 -right-12 size-44 rounded-full bg-white/10"
-          aria-hidden="true"
-        />
+      <div className="bg-brand-gradient relative overflow-hidden rounded-[1.5rem] p-6 text-white shadow-float">
         <div
           className="pointer-events-none absolute -bottom-16 -left-8 size-40 rounded-full bg-accent-400/25"
           aria-hidden="true"
@@ -125,10 +122,22 @@ export function JoinForm({ initialCode = '' }: { initialCode?: string }) {
   const accept = useAcceptInvite(userId)
   type In = z.input<typeof joinSchema>
   type Out = z.output<typeof joinSchema>
-  const { register, handleSubmit, formState } = useForm<In, unknown, Out>({
+  const { register, handleSubmit, formState, setValue, setFocus } = useForm<In, unknown, Out>({
     resolver: zodResolver(joinSchema),
     defaultValues: { code: initialCode ? formatInviteCode(initialCode) : '', displayName: '' },
   })
+  const [scanning, setScanning] = useState(false)
+  const [notInvite, setNotInvite] = useState(false)
+  const [scanned, setScanned] = useState(false)
+  const closeScanner = () => {
+    setScanning(false)
+    setNotInvite(false)
+  }
+  // After the sheet has closed (child effects run first, and closing a <dialog> returns
+  // focus to its opener), move on to the name field.
+  useEffect(() => {
+    if (scanned && !scanning) setFocus('displayName')
+  }, [scanned, scanning, setFocus])
 
   return (
     <form
@@ -155,6 +164,17 @@ export function JoinForm({ initialCode = '' }: { initialCode?: string }) {
         error={formState.errors.code?.message}
         {...register('code')}
       />
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => {
+          setScanned(false)
+          setScanning(true)
+        }}
+      >
+        Scan invite QR
+      </Button>
+      {scanned && <Banner tone="success">Invite code filled in. Add your name and join.</Banner>}
       <TextField
         label="Your name"
         hint="Shown to other members of this home."
@@ -169,6 +189,31 @@ export function JoinForm({ initialCode = '' }: { initialCode?: string }) {
       <Button type="submit" size="lg" loading={accept.isPending}>
         Join home
       </Button>
+      <Sheet open={scanning} onClose={closeScanner} title="Scan invite QR">
+        <div className="flex flex-col gap-3">
+          {scanning && (
+            <QrPanel
+              active
+              hint="Point at the invite QR on the other phone"
+              onText={(text) => {
+                const code = parseInvitePayload(text)
+                if (!code) {
+                  setNotInvite(true)
+                  return
+                }
+                setValue('code', formatInviteCode(code), { shouldValidate: true })
+                setScanned(true)
+                closeScanner()
+              }}
+            />
+          )}
+          {notInvite && (
+            <Banner tone="warning">
+              That isn’t a KeyFinder invite. Ask for the QR in Members → Invite.
+            </Banner>
+          )}
+        </div>
+      </Sheet>
     </form>
   )
 }

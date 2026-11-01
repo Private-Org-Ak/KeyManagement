@@ -1,11 +1,31 @@
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
+const UPDATE_CHECK_MS = 60 * 60 * 1000
+
+/**
+ * Installed apps are often resumed from the background without a page load, so the browser
+ * wouldn't look for a new version. Check when the app comes back to the foreground and hourly.
+ */
+function watchForUpdates(registration: ServiceWorkerRegistration): void {
+  const check = () => {
+    if (navigator.onLine) void registration.update().catch(() => undefined)
+  }
+  setInterval(check, UPDATE_CHECK_MS)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') check()
+  })
+}
+
 /** Shown when a new service worker is waiting (`registerType: 'prompt'`). */
 export function UpdateToast() {
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
-  } = useRegisterSW()
+  } = useRegisterSW({
+    onRegisteredSW: (_url, registration) => {
+      if (registration) watchForUpdates(registration)
+    },
+  })
 
   if (!needRefresh) return null
 

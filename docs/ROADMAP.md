@@ -23,13 +23,13 @@ Work top to bottom. Tick a box only when its acceptance criteria pass along with
 
 ## Phase 2 — Auth
 
-- [x] Login: email → 6-digit OTP code screen (resend with cooldown, error states).
+- [x] Login: email → 6-digit OTP code screen (resend with cooldown, error states). **Replaced by email/phone + password (D30, 2026-11-01).**
 - [x] Session guard and `?next=` redirect; sign out (wipes Dexie).
-- [ ] Local OTP testing through the Supabase Inbucket/Mailpit UI.
+- [x] ~~Local OTP testing through the Supabase Inbucket/Mailpit UI.~~ Obsolete with D30: no auth emails.
 
 **Accept:** e2e test logs in through the local mail catcher and lands on `/onboarding`.
 
-**Status (2026-10-31):** `e2e/auth.spec.ts` logs in through the real UI and lands on `/onboarding` ✅. The test reads the code from Mailpit when the email contains it and otherwise falls back to the admin `generateLink` OTP — on this machine the Supabase CLI fails to copy `supabase/templates/otp.html` into the auth container under Colima (`ContainerCreateError … must be a directory`), so the local email shows a link, not the code. Item 3 stays open until that works (Docker Desktop/OrbStack, or a CLI fix). Meanwhile `content_path` is commented out (with it, `supabase start` fails on Colima) and `npm run dev:code -- <email>` prints a valid code for local sign-in.
+**Status (2026-11-01):** Login is email or phone + password (D30); `e2e/auth.spec.ts` covers sign-up (email and phone), sign-in with a locally typed 10-digit number, wrong password, duplicate account, validation, change password and sign-out wipe. **Earlier status (2026-10-31):** `e2e/auth.spec.ts` logs in through the real UI and lands on `/onboarding` ✅. The test reads the code from Mailpit when the email contains it and otherwise falls back to the admin `generateLink` OTP — on this machine the Supabase CLI fails to copy `supabase/templates/otp.html` into the auth container under Colima (`ContainerCreateError … must be a directory`), so the local email shows a link, not the code. Item 3 stays open until that works (Docker Desktop/OrbStack, or a CLI fix). Meanwhile `content_path` is commented out (with it, `supabase start` fails on Colima) and `npm run dev:code -- <email>` prints a valid code for local sign-in.
 
 ## Phase 3 — Households & members
 
@@ -116,7 +116,7 @@ Work top to bottom. Tick a box only when its acceptance criteria pass along with
 
 ## Phase 11 — Ship
 
-- [x] Production Supabase project setup checklist (done by the owner): migrations, Site/redirect URLs, custom SMTP, OTP template with `{{ .Token }}`.
+- [x] Production Supabase project setup checklist (done by the owner): migrations, Site/redirect URLs, custom SMTP, OTP template with `{{ .Token }}`. (Superseded by D30: confirmations off, phone provider with placeholder SMS values, no SMTP.)
 - [ ] Deploy the frontend with SPA rewrites; real icons and splash screens.
 - [x] Accessibility pass (labels, contrast, focus, screen reader on scan results).
 

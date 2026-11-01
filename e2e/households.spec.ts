@@ -23,6 +23,7 @@ test('A creates a home and invites; B joins via link; A removes B; B is bounced 
   await a.getByRole('button', { name: 'Create invite' }).click()
   const code = (await a.getByTestId('invite-code').textContent())?.replace(/-/g, '') ?? ''
   expect(code).toMatch(/^[0-9A-F]{16}$/)
+  await expect(a.getByTestId('invite-qr').locator('svg')).toBeVisible()
   await a.getByRole('button', { name: 'Done' }).click()
   await expect(a.getByText('Member invite')).toBeVisible()
 

@@ -38,7 +38,7 @@ export function Sheet({
       onClick={(e) => {
         if (e.target === ref.current) onClose()
       }}
-      className="m-0 mt-auto w-full max-w-none rounded-t-[2rem] bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/60 backdrop:backdrop-blur-sm sm:m-auto sm:max-w-lg sm:rounded-[2rem] dark:bg-surface-dark dark:text-slate-100"
+      className="animate-sheet-up sm:animate-pop m-0 mt-auto w-full max-w-none rounded-t-[1.5rem] bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/60 backdrop:backdrop-blur-sm sm:m-auto sm:max-w-lg sm:rounded-[1.5rem] dark:bg-surface-dark dark:text-slate-100"
     >
       {/* Content is mounted only while open: forms reset and no hidden duplicate fields. */}
       <div className="pb-safe flex max-h-[85dvh] flex-col">

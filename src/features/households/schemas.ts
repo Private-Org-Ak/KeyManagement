@@ -14,15 +14,6 @@ export const joinSchema = z.object({
   code: z.string().refine(isValidInviteCode, 'Invite codes look like ABCD-1234-EF56-7890.'),
   displayName,
 })
-export const inviteSchema = z.object({
-  role: z.enum(['member', 'admin']),
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .max(254)
-    .refine(
-      (v) => v === '' || z.email().safeParse(v).success,
-      'Enter a valid email or leave it empty.',
-    ),
-})
+// No email restriction: sign-up doesn't verify addresses (D30), so the single-use, expiring
+// code is the protection.
+export const inviteSchema = z.object({ role: z.enum(['member', 'admin']) })

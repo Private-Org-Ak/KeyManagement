@@ -16,7 +16,7 @@ An installable web app (PWA) on iOS and Android. A household records which key n
 
 ## User stories (MVP)
 
-1. As a user I log in with my email and a 6-digit code (no password).
+1. As a user I create an account and log in with my email or phone number and a password (no codes by email/SMS — D30).
 2. As a new user I either create a home or join one with an invite code/link.
 3. As an owner I add doors quickly, including "room + attached washroom" in one step.
 4. As a member I add a key: number, door, optional label ("Copy 1"), holder, photo.
@@ -24,7 +24,7 @@ An installable web app (PWA) on iOS and Android. A household records which key n
 6. As a member I point the camera at a key and the app reads the number and shows the door.
 7. As a member I scan a QR sticker (or tap an NFC tag on Android) on a key ring and see the door.
 8. As a member I open a door and see all its keys and who currently has them.
-9. As an owner/admin I invite people via a shareable link/code and remove them.
+9. As an owner/admin I invite people via a shareable link/code or a QR they scan in their app, and remove them.
 10. As a member I can look up keys with no internet (data cached on the phone).
 11. As a user I belong to more than one household and switch between them.
 
@@ -40,7 +40,7 @@ An installable web app (PWA) on iOS and Android. A household records which key n
 
 | Screen             | Purpose                                                                        |
 | ------------------ | ------------------------------------------------------------------------------ |
-| Login              | Email → 6-digit code                                                           |
+| Login              | Email or phone + password; sign in / create account                            |
 | Onboarding         | Create a home / Join with code                                                 |
 | Home (search)      | Large search box, Scan button, recent lookups, offline indicator               |
 | Scan               | Tabs: Number (OCR) · QR · NFC (Android only); result sheet                     |
@@ -48,9 +48,9 @@ An installable web app (PWA) on iOS and Android. A household records which key n
 | Doors              | Grouped by room group / floor; quick-add                                       |
 | Door detail        | Its keys; add key                                                              |
 | Key detail         | Edit number, door, label, holder, photo, tag (assign/clear)                    |
-| Members            | List, roles, invite (share sheet), remove, leave                               |
+| Members            | List, roles, invite (share sheet + QR), remove, leave                          |
 | Household settings | Rename, print QR tag sheet, delete household                                   |
-| Account            | Sign out, install instructions, storage status                                 |
+| Account            | Profile (signed-in email/phone), change password, sign out                     |
 
 ## Setup UX matters most
 

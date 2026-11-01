@@ -5,7 +5,7 @@
 ```
  Phone (installed PWA)                                  Supabase
  ┌──────────────────────────────────────────┐         ┌────────────────────────────┐
- │ React UI ── TanStack Query ── api hooks ─┼─HTTPS──▶│ Auth (email OTP → JWT)     │
+ │ React UI ── TanStack Query ── api hooks ─┼─HTTPS──▶│ Auth (password → JWT)      │
  │     │                          │         │  JWT    │ PostgREST ─▶ Postgres + RLS│
  │     ▼                          ▼         │         │ RPCs (security definer)    │
  │ Search/match (local)      Dexie cache    │         │ Storage: key-photos (priv) │
@@ -20,7 +20,7 @@ All lookups run **locally** against the cached household list. The server is use
 ## Routing
 
 ```
-/login                      email → OTP code
+/login                      email or phone + password (sign in / create account)
 /onboarding                 create a home | join with code
 /join/:code                 join (redirects to /login first if needed, then back)
 /h/:hid                     home: search + scan button
@@ -32,7 +32,7 @@ All lookups run **locally** against the cached household list. The server is use
 /h/:hid/members             members + invites
 /h/:hid/settings            rename, print QR tags, delete
 /h/:hid/settings/tags       printable A4 sheet of QR tags
-/account                    sign out, install help
+/account                    profile, change password, sign out
 ```
 
 `/` redirects to the **Doors** page of the last-used household (`/h/:hid/doors`, `localStorage: kf.lastHousehold`), else `/onboarding` (D26). Route guards: unauthenticated → `/login?next=…`; `hid` not in the user's memberships → `/`.
